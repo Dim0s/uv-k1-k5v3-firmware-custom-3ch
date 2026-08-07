@@ -738,7 +738,7 @@ static void SetMemScanProgressChannel(uint16_t channel)
         }
 
         gScanRangeStart = gTxVfo->pRX->Frequency;
-        gScanRangeStop = gEeprom.VfoInfo[!gEeprom.TX_VFO].freq_config_RX.Frequency;
+        gScanRangeStop = gEeprom.VfoInfo[(gEeprom.TX_VFO + 1u) % NUM_VFOS].freq_config_RX.Frequency;
 #ifdef ENABLE_FEAT_F4HWN_SCAN_FASTER
         ScanFastResetState();
 #endif

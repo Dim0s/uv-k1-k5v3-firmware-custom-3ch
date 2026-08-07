@@ -24,6 +24,10 @@
 #include "driver/bk4819.h"
 #include "frequencies.h"
 
+#ifndef NUM_VFOS
+#define NUM_VFOS 3
+#endif
+
 enum {
     RADIO_CHANNEL_UP   = 0x01u,
     RADIO_CHANNEL_DOWN = 0xFFu,
@@ -147,7 +151,7 @@ extern VFO_Info_t    *gCurrentVfo;
 
 extern DCS_CodeType_t gCurrentCodeType;
 
-extern VfoState_t     VfoState[2];
+extern VfoState_t     VfoState[NUM_VFOS];
 
 // Human-readable label per VfoState_t (defined in ui/main.c), e.g. "TX DISABLE".
 extern const char *const VfoStateStr[];

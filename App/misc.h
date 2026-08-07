@@ -36,6 +36,10 @@
     #define SWAP(a, b) ({ __typeof__ (a) _c = (a);  a = b; b = _c; })
 #endif
 
+#ifndef NUM_VFOS
+#define NUM_VFOS 3
+#endif
+
 #define FM_CHANNELS_MAX 48
 #define MR_CHANNELS_MAX 1024
 #define MR_CHANNELS_LIST 24
@@ -372,8 +376,13 @@ extern uint8_t               gFoundCTCSS;
 extern uint8_t               gFoundCDCSS;
 extern bool                  gEndOfRxDetectedMaybe;
 
-extern int16_t               gVFO_RSSI[2];
-extern uint8_t               gVFO_RSSI_bar_level[2];
+extern int16_t               gVFO_RSSI[NUM_VFOS];
+extern uint8_t               gVFO_RSSI_bar_level[NUM_VFOS];
+
+/* Shared reverse-video / edit selection among the three home channels */
+extern uint8_t               gHighlightVfo;
+/* Side1/Side2 acting as PTT (not the hardware PTT GPIO) */
+extern bool                  gSidePttActive;
 
 // battery critical, limit functionality to minimum
 extern uint8_t               gReducedService;

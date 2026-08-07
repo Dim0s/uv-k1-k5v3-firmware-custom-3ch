@@ -80,10 +80,11 @@ const t_menu_item MenuList[] =
         {"NOAA-S",      MENU_NOAA_S    },
     #endif
 #endif
-    {"F1Shrt",      MENU_F1SHRT        },
-    {"F1Long",      MENU_F1LONG        },
-    {"F2Shrt",      MENU_F2SHRT        },
-    {"F2Long",      MENU_F2LONG        },
+    /* Side-key action menus hidden: Side1/Side2 are fixed as CH2/CH3 PTT */
+    // {"F1Shrt",      MENU_F1SHRT        },
+    // {"F1Long",      MENU_F1LONG        },
+    // {"F2Shrt",      MENU_F2SHRT        },
+    // {"F2Long",      MENU_F2LONG        },
     {"M Long",      MENU_MLONG         },
 
     {"KeyLck",      MENU_AUTOLK        }, // was "AUTOLk"
@@ -91,8 +92,9 @@ const t_menu_item MenuList[] =
     {"BatSav",      MENU_SAVE          }, // was "SAVE"
     {"BatTxt",      MENU_BAT_TXT       },
     {"Mic",         MENU_MIC           },
-    {"MicBar",      MENU_MIC_BAR       },
-    {"ChDisp",      MENU_MDF           }, // was "MDF"
+    /* MicBar / ChDisp unused on triple-VFO home UI */
+    // {"MicBar",      MENU_MIC_BAR       },
+    // {"ChDisp",      MENU_MDF           }, // was "MDF"
     {"POnMsg",      MENU_PONMSG        },
     {"BLTime",      MENU_ABR           }, // was "ABR"
     {"BLMin",       MENU_ABR_MIN       },
@@ -137,7 +139,8 @@ const t_menu_item MenuList[] =
 #else
     {"BatVol",      MENU_VOL           }, // was "VOL"
 #endif
-    {"RxMode",      MENU_TDR           },
+    /* Dual watch / cross band menu hidden: always triple-watch */
+    // {"RxMode",      MENU_TDR           },
     {"Sql",         MENU_SQL           },
 #ifdef ENABLE_FEAT_F4HWN
     {"SetPwr",      MENU_SET_PWR       },
@@ -147,8 +150,9 @@ const t_menu_item MenuList[] =
     {"SetCtr",      MENU_SET_CTR       },
     {"SetInv",      MENU_SET_INV       },
     {"SetLck",      MENU_SET_LCK       },
-    {"SetMet",      MENU_SET_MET       },
-    {"SetGUI",      MENU_SET_GUI       },
+    /* SetMet / SetGUI unused on triple-VFO home UI */
+    // {"SetMet",      MENU_SET_MET       },
+    // {"SetGUI",      MENU_SET_GUI       },
 #ifdef ENABLE_FEAT_F4HWN_AUDIO    
     {"SetRxA",      MENU_SET_AUD       },
 #endif

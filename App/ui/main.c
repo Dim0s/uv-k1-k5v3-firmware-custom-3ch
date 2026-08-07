@@ -41,6 +41,7 @@
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 #include "ui/main.h"
+#include "ui/triple_vfo_home.h"
 #include "ui/ui.h"
 #include "audio.h"
 #include "menu.h"
@@ -1337,8 +1338,12 @@ void UI_DisplayMain(void)
         return;
     }
 #else
-    UI_DisplayUnlockKeyboard(isMainOnly() ? 5 : 3);
+    UI_DisplayUnlockKeyboard(5);
 #endif
+
+    /* New triple-VFO home UI */
+    UI_DisplayTripleVfoHome();
+    return;
 
     unsigned int activeTxVFO = gRxVfoIsActive ? gEeprom.RX_VFO : gEeprom.TX_VFO;
 

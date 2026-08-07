@@ -168,9 +168,10 @@ void SETTINGS_InitEEPROM(void)
     gEeprom.BACKLIGHT_MIN_STAT    = BLMIN_STAT_ON;
 #endif
     gEeprom.CHANNEL_DISPLAY_MODE  = (Data[1] < 4) ? Data[1] : MDF_FREQUENCY;    // 4 instead of 3 - extra display mode
-    gEeprom.CROSS_BAND_RX_TX      = (Data[2] < 3) ? Data[2] : CROSS_BAND_OFF;
+    /* Triple-VFO home: XB disabled, always triple-watch poll */
+    gEeprom.CROSS_BAND_RX_TX      = CROSS_BAND_OFF;
     gEeprom.BATTERY_SAVE          = (Data[3] < 6) ? Data[3] : 4;
-    gEeprom.DUAL_WATCH            = (Data[4] < 3) ? Data[4] : DUAL_WATCH_CHAN_A;
+    gEeprom.DUAL_WATCH            = DUAL_WATCH_CHAN_A;
     gEeprom.BACKLIGHT_TIME        = (Data[5] < 62) ? Data[5] : 12;
     #ifdef ENABLE_FEAT_F4HWN_NARROWER
         gEeprom.TAIL_TONE_ELIMINATION = Data[6] & 0x01;
@@ -204,8 +205,8 @@ void SETTINGS_InitEEPROM(void)
 #endif
     */
 
-// 0x00A010 .. 0x00A01F
-uint16_t Data16[8];
+// 0x00A010 .. : Screen/Mr/Freq per VFO, then NOAA
+uint16_t Data16[12];
 
 PY25Q16_ReadBuffer(0x00A010, Data16, sizeof(Data16));
 
@@ -215,10 +216,14 @@ gEeprom.FreqChannel[0]   = IS_FREQ_CHANNEL(Data16[2]) ? Data16[2] : (FREQ_CHANNE
 gEeprom.ScreenChannel[1] = IS_VALID_CHANNEL(Data16[3]) ? Data16[3] : (FREQ_CHANNEL_FIRST + BAND6_400MHz);
 gEeprom.MrChannel[1]     = IS_MR_CHANNEL(Data16[4]) ? Data16[4] : MR_CHANNEL_FIRST;
 gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNEL_FIRST + BAND6_400MHz);
+gEeprom.ScreenChannel[2] = IS_VALID_CHANNEL(Data16[6]) ? Data16[6] : (FREQ_CHANNEL_FIRST + BAND3_137MHz);
+gEeprom.MrChannel[2]     = IS_MR_CHANNEL(Data16[7]) ? Data16[7] : MR_CHANNEL_FIRST;
+gEeprom.FreqChannel[2]   = IS_FREQ_CHANNEL(Data16[8]) ? Data16[8] : (FREQ_CHANNEL_FIRST + BAND3_137MHz);
 
 #ifdef ENABLE_NOAA
-    gEeprom.NoaaChannel[0]   = IS_NOAA_CHANNEL(Data16[6]) ? Data16[6] : NOAA_CHANNEL_FIRST;
-    gEeprom.NoaaChannel[1]   = IS_NOAA_CHANNEL(Data16[7]) ? Data16[7] : NOAA_CHANNEL_FIRST;
+    gEeprom.NoaaChannel[0]   = IS_NOAA_CHANNEL(Data16[9]) ? Data16[9] : NOAA_CHANNEL_FIRST;
+    gEeprom.NoaaChannel[1]   = IS_NOAA_CHANNEL(Data16[10]) ? Data16[10] : NOAA_CHANNEL_FIRST;
+    gEeprom.NoaaChannel[2]   = IS_NOAA_CHANNEL(Data16[11]) ? Data16[11] : NOAA_CHANNEL_FIRST;
 #endif
 
 #ifdef ENABLE_FMRADIO
@@ -293,7 +298,8 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     #endif
     gEeprom.ROGER                          = (Data[1] <  3) ? Data[1] : ROGER_MODE_OFF;
     gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
-    gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
+    gEeprom.TX_VFO                         = (Data[3] <  NUM_VFOS) ? Data[3] : 0;
+    gHighlightVfo                          = gEeprom.TX_VFO;
     gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
 
     // 0ED0..0ED7
@@ -392,6 +398,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     {
         gEeprom.ScreenChannel[0] = gEeprom.MrChannel[0];
         gEeprom.ScreenChannel[1] = gEeprom.MrChannel[1];
+        gEeprom.ScreenChannel[2] = gEeprom.MrChannel[2];
     }
 
     // 0D60..0E27
@@ -789,16 +796,21 @@ void SETTINGS_FactoryReset(bool bIsAll)
     #ifdef ENABLE_FEAT_F4HWN_RESET_VFO
         RADIO_InitInfo(&gEeprom.VfoInfo[0], FREQ_CHANNEL_FIRST + BAND3_137MHz, 14550000);
         RADIO_InitInfo(&gEeprom.VfoInfo[1], FREQ_CHANNEL_FIRST + BAND6_400MHz, 43350000);
+        RADIO_InitInfo(&gEeprom.VfoInfo[2], FREQ_CHANNEL_FIRST + BAND3_137MHz, 14520000);
 
         gEeprom.ScreenChannel[0] = FREQ_CHANNEL_FIRST + BAND3_137MHz;
         gEeprom.ScreenChannel[1] = FREQ_CHANNEL_FIRST + BAND6_400MHz;
+        gEeprom.ScreenChannel[2] = FREQ_CHANNEL_FIRST + BAND3_137MHz;
         gEeprom.MrChannel[0]     = MR_CHANNEL_FIRST;
         gEeprom.MrChannel[1]     = MR_CHANNEL_FIRST;
+        gEeprom.MrChannel[2]     = MR_CHANNEL_FIRST;
         gEeprom.FreqChannel[0]   = FREQ_CHANNEL_FIRST + BAND3_137MHz;
         gEeprom.FreqChannel[1]   = FREQ_CHANNEL_FIRST + BAND6_400MHz;
+        gEeprom.FreqChannel[2]   = FREQ_CHANNEL_FIRST + BAND3_137MHz;
         
         SETTINGS_SaveChannel(FREQ_CHANNEL_FIRST + BAND3_137MHz, 0, &gEeprom.VfoInfo[0], 2);
         SETTINGS_SaveChannel(FREQ_CHANNEL_FIRST + BAND6_400MHz, 1, &gEeprom.VfoInfo[1], 2);
+        SETTINGS_SaveChannel(FREQ_CHANNEL_FIRST + BAND3_137MHz, 2, &gEeprom.VfoInfo[2], 2);
 
         gVfoStateChanged = true;
         gScheduleVfoSave = true;
@@ -847,7 +859,7 @@ void SETTINGS_SaveVfoIndicesFlush(void)
         
         if (gVfoStateChanged) {
             gVfoStateChanged = false;
-            uint16_t Data16[8];
+            uint16_t Data16[12];
 
             #ifndef ENABLE_NOAA
                 PY25Q16_ReadBuffer(0x00A010, Data16, sizeof(Data16));
@@ -859,10 +871,14 @@ void SETTINGS_SaveVfoIndicesFlush(void)
             Data16[3] = gEeprom.ScreenChannel[1];
             Data16[4] = gEeprom.MrChannel[1];
             Data16[5] = gEeprom.FreqChannel[1];
+            Data16[6] = gEeprom.ScreenChannel[2];
+            Data16[7] = gEeprom.MrChannel[2];
+            Data16[8] = gEeprom.FreqChannel[2];
 
         #ifdef ENABLE_NOAA
-            Data16[6] = gEeprom.NoaaChannel[0];
-            Data16[7] = gEeprom.NoaaChannel[1];
+            Data16[9]  = gEeprom.NoaaChannel[0];
+            Data16[10] = gEeprom.NoaaChannel[1];
+            Data16[11] = gEeprom.NoaaChannel[2];
         #endif
 
             PY25Q16_WriteBuffer(0x00A010, Data16, sizeof(Data16), false);
@@ -1166,9 +1182,10 @@ void SETTINGS_SaveChannel(uint16_t Channel, uint8_t VFO, const VFO_Info_t *pVFO,
     uint16_t OffsetVFO = 0 + Channel * 16;
 
     if (IS_FREQ_CHANNEL(Channel)) { // it's a VFO, not a channel
-        // 0x0C80
-        OffsetVFO  = (VFO == 0) ? 0x009000 : 0x009010;
-        OffsetVFO += (Channel - FREQ_CHANNEL_FIRST) * 32;
+        if (VFO >= NUM_VFOS)
+            VFO = 0;
+        OffsetVFO  = 0x009000 + (VFO * 16u);
+        OffsetVFO += (Channel - FREQ_CHANNEL_FIRST) * (NUM_VFOS * 16u);
     }
 
     if (Mode >= 2 || IS_FREQ_CHANNEL(Channel)) { // copy VFO to a channel
@@ -1405,8 +1422,8 @@ void SETTINGS_ResetTxLock(void)
         PY25Q16_WriteBuffer(Offset, Buf, BatchSize, false);
     }
 
-    RADIO_ConfigureChannel(0, VFO_CONFIGURE_RELOAD);
-    RADIO_ConfigureChannel(1, VFO_CONFIGURE_RELOAD);
+    for (unsigned int v = 0; v < NUM_VFOS; v++)
+        RADIO_ConfigureChannel(v, VFO_CONFIGURE_RELOAD);
 
     #undef SETTINGS_ResetTxLock_BATCH
     #undef CHANNEL_SIZE

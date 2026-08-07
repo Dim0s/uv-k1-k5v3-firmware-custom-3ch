@@ -2,6 +2,7 @@
 #include "audio.h"
 #include "functions.h"
 #include "misc.h"
+#include "radio.h"
 #include "settings.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
@@ -23,22 +24,34 @@ void COMMON_KeypadLockToggle()
     }
 }
 
+void COMMON_SelectPttVfo(uint8_t vfo)
+{
+    if (vfo >= NUM_VFOS)
+        vfo = 0;
+    gEeprom.TX_VFO = vfo;
+    gEeprom.RX_VFO = vfo;
+    gHighlightVfo  = vfo;
+    /* Only retarget VFO pointers here. Do NOT call RADIO_SetupRegisters():
+     * that forces RX config and can race with RADIO_PrepareTX(). */
+    RADIO_SelectVfos();
+}
+
 void COMMON_SwitchVFOs()
 {
 #ifdef ENABLE_SCAN_RANGES    
     gScanRangeStart = 0;
 #endif
-    gEeprom.TX_VFO ^= 1;
+    gEeprom.TX_VFO = (uint8_t)((gEeprom.TX_VFO + 1u) % NUM_VFOS);
+    gEeprom.RX_VFO = gEeprom.TX_VFO;
+    gHighlightVfo  = gEeprom.TX_VFO;
 
     if (gInputBoxIndex > 0) {
         gInputBoxIndex = 0;
         gHasVfoBackup = false;
     }
 
-    if (gEeprom.CROSS_BAND_RX_TX != CROSS_BAND_OFF)
-        gEeprom.CROSS_BAND_RX_TX = gEeprom.TX_VFO + 1;
-    if (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF)
-        gEeprom.DUAL_WATCH = gEeprom.TX_VFO + 1;
+    gEeprom.CROSS_BAND_RX_TX = CROSS_BAND_OFF;
+    gEeprom.DUAL_WATCH       = DUAL_WATCH_CHAN_A;
 
     gRequestSaveSettings  = 1;
     gFlagReconfigureVfos  = true;

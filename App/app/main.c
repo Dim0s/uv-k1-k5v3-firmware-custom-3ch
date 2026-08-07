@@ -1091,6 +1091,9 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
             GENERIC_Key_F(bKeyPressed, bKeyHeld);
             break;
         case KEY_PTT:
+            /* VFO already selected in CheckKeys for hardware PTT; keep for other callers */
+            if (bKeyPressed && !bKeyHeld && !gSidePttActive)
+                COMMON_SelectPttVfo(0);
             GENERIC_Key_PTT(bKeyPressed);
             break;
         default:

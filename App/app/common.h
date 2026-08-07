@@ -9,5 +9,6 @@
 void COMMON_KeypadLockToggle();
 void COMMON_SwitchVFOs();
 void COMMON_SwitchVFOMode();
+void COMMON_SelectPttVfo(uint8_t vfo);
 
 #endif

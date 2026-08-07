@@ -114,8 +114,29 @@ void Main(void)
     SETTINGS_WriteBuildOptions();
     SETTINGS_LoadCalibration();
 
-    RADIO_ConfigureChannel(0, VFO_CONFIGURE_RELOAD);
-    RADIO_ConfigureChannel(1, VFO_CONFIGURE_RELOAD);
+    for (unsigned int v = 0; v < NUM_VFOS; v++)
+        RADIO_ConfigureChannel(v, VFO_CONFIGURE_RELOAD);
+
+    /* First flash / empty 3-VFO map: ensure each VFO has a TX-capable FM default */
+    {
+        static const uint32_t kDefaultFreq[NUM_VFOS] = { 14550000u, 43350000u, 14520000u };
+        static const uint16_t kDefaultCh[NUM_VFOS] = {
+            FREQ_CHANNEL_FIRST + BAND3_137MHz,
+            FREQ_CHANNEL_FIRST + BAND6_400MHz,
+            FREQ_CHANNEL_FIRST + BAND3_137MHz
+        };
+        for (unsigned int v = 0; v < NUM_VFOS; v++) {
+            VFO_Info_t *p = &gEeprom.VfoInfo[v];
+            if (p->pTX == NULL || p->pRX == NULL ||
+                p->freq_config_RX.Frequency < frequencyBandTable[0].lower ||
+                TX_freq_check(p->freq_config_TX.Frequency) != 0) {
+                RADIO_InitInfo(p, kDefaultCh[v], kDefaultFreq[v]);
+                gEeprom.ScreenChannel[v] = kDefaultCh[v];
+                gEeprom.FreqChannel[v]   = kDefaultCh[v];
+                SETTINGS_SaveChannel(kDefaultCh[v], (uint8_t)v, p, 2);
+            }
+        }
+    }
 
     RADIO_SelectVfos();
 

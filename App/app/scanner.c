@@ -294,8 +294,8 @@ static void SCANNER_Key_MENU(bool bKeyPressed, bool bKeyHeld)
                 gTxVfo->STEP_SETTING = stepSetting;
             }
             else {
-                RADIO_ConfigureChannel(0, VFO_CONFIGURE_RELOAD);
-                RADIO_ConfigureChannel(1, VFO_CONFIGURE_RELOAD);
+                for (unsigned int v = 0; v < NUM_VFOS; v++)
+                    RADIO_ConfigureChannel(v, VFO_CONFIGURE_RELOAD);
 
                 gTxVfo->freq_config_RX.CodeType = gScanCssResultType;
                 gTxVfo->freq_config_RX.Code     = gScanCssResultCode;

@@ -70,16 +70,22 @@ enum {
 };
 */
 
+#ifndef NUM_VFOS
+#define NUM_VFOS 3
+#endif
+
 enum {
     CROSS_BAND_OFF = 0,
     CROSS_BAND_CHAN_A,
-    CROSS_BAND_CHAN_B
+    CROSS_BAND_CHAN_B,
+    CROSS_BAND_CHAN_C
 };
 
 enum {
     DUAL_WATCH_OFF = 0,
     DUAL_WATCH_CHAN_A,
-    DUAL_WATCH_CHAN_B
+    DUAL_WATCH_CHAN_B,
+    DUAL_WATCH_CHAN_C
 };
 
 enum {
@@ -171,18 +177,18 @@ enum CHANNEL_DisplayMode_t {
 typedef enum CHANNEL_DisplayMode_t CHANNEL_DisplayMode_t;
 
 typedef struct {
-    uint16_t               ScreenChannel[2]; // current channels set in the radio (memory or frequency channels)
-    uint16_t               FreqChannel[2]; // last frequency channels used
-    uint16_t               MrChannel[2]; // last memory channels used
+    uint16_t               ScreenChannel[NUM_VFOS]; // current channels set in the radio (memory or frequency channels)
+    uint16_t               FreqChannel[NUM_VFOS]; // last frequency channels used
+    uint16_t               MrChannel[NUM_VFOS]; // last memory channels used
 #ifdef ENABLE_NOAA
-    uint16_t           NoaaChannel[2];
+    uint16_t           NoaaChannel[NUM_VFOS];
 #endif
 
-    // The actual VFO index (0-upper/1-lower) that is now used for RX, 
-    // It is being alternated by dual watch, and flipped by crossband
+    // The actual VFO index (0..NUM_VFOS-1) that is now used for RX,
+    // It is being alternated by triple-watch polling
     uint8_t               RX_VFO;
 
-    // The main VFO index (0-upper/1-lower) selected by the user
+    // The main VFO index (0..NUM_VFOS-1) selected by the user / PTT key
     // 
     uint8_t               TX_VFO;
 
@@ -290,7 +296,7 @@ typedef struct {
     #endif
     uint8_t               DAC_GAIN;
 
-    VFO_Info_t            VfoInfo[2];
+    VFO_Info_t            VfoInfo[NUM_VFOS];
     uint32_t              POWER_ON_PASSWORD;
     uint16_t              VOX1_THRESHOLD;
     uint16_t              VOX0_THRESHOLD;

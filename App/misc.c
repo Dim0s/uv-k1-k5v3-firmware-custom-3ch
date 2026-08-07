@@ -234,8 +234,10 @@ uint8_t           gFoundCTCSS;
 uint8_t           gFoundCDCSS;
 bool              gEndOfRxDetectedMaybe;
 
-int16_t           gVFO_RSSI[2];
-uint8_t           gVFO_RSSI_bar_level[2];
+int16_t           gVFO_RSSI[NUM_VFOS];
+uint8_t           gVFO_RSSI_bar_level[NUM_VFOS];
+uint8_t           gHighlightVfo;
+bool              gSidePttActive;
 
 uint8_t           gReducedService;
 uint8_t           gBatteryVoltageIndex;

@@ -29,6 +29,7 @@
 #endif
 #include "app/app.h"
 #include "app/chFrScanner.h"
+#include "app/common.h"
 #include "app/dtmf.h"
 #ifdef ENABLE_FLASHLIGHT
     #include "app/flashlight.h"
@@ -714,8 +715,11 @@ void APP_StartListening(FUNCTION_Type_t function)
         BK1080_Init0();
 #endif
 
-    // clear the other vfo's rssi level (to hide the antenna symbol)
-    gVFO_RSSI_bar_level[!vfo] = 0;
+    // clear other VFOs' rssi levels (to hide the antenna symbol)
+    for (unsigned int i = 0; i < NUM_VFOS; i++) {
+        if (i != vfo)
+            gVFO_RSSI_bar_level[i] = 0;
+    }
 
     AUDIO_AudioPathOn();
     gEnableSpeaker = true;
@@ -759,6 +763,8 @@ void APP_StartListening(FUNCTION_Type_t function)
         // when crossband is active only the main VFO should be used for TX
         if(gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF)
             gRxVfoIsActive = true;
+
+        gHighlightVfo = gEeprom.RX_VFO;
 
         // let the user see DW is not active
         gDualWatchActive = false;
@@ -829,7 +835,7 @@ static void DualwatchAlternate(void)
         if (gIsNoaaMode)
         {
             if (!IS_NOAA_CHANNEL(gEeprom.ScreenChannel[0]) || !IS_NOAA_CHANNEL(gEeprom.ScreenChannel[1]))
-                gEeprom.RX_VFO = (gEeprom.RX_VFO + 1) & 1;
+                gEeprom.RX_VFO = (uint8_t)((gEeprom.RX_VFO + 1u) % NUM_VFOS);
             else
                 gEeprom.RX_VFO = 0;
 
@@ -840,12 +846,12 @@ static void DualwatchAlternate(void)
         }
         else
     #endif
-    {   // toggle between VFO's
-        gEeprom.RX_VFO = !gEeprom.RX_VFO;
+    {   // cycle among three VFOs
+        gEeprom.RX_VFO = (uint8_t)((gEeprom.RX_VFO + 1u) % NUM_VFOS);
         gRxVfo         = &gEeprom.VfoInfo[gEeprom.RX_VFO];
 
         if (!gDualWatchActive)
-        {   // let the user see DW is active
+        {
             gDualWatchActive = true;
             gUpdateStatus    = true;
         }
@@ -1411,7 +1417,8 @@ void APP_Update(void)
 
 void StopTransmitting(void) {
     ProcessKey(KEY_PTT, false, false);
-    gPttIsPressed = false;
+    gPttIsPressed  = false;
+    gSidePttActive = false;
     if (gKeyReading1 != KEY_INVALID)
         gPttWasReleased = true;
 
@@ -1460,8 +1467,10 @@ void CheckKeys(void)
                 if (gPttOnePushCounter == 0)
                 {   // start transmitting
                     boot_counter_10ms   = 0;
+                    gSidePttActive      = false;
                     gPttIsPressed       = true;
                     gPttOnePushCounter = 1;
+                    COMMON_SelectPttVfo(0);
                     ProcessKey(KEY_PTT, true, false);
                 } 
                 else if (gPttOnePushCounter == 3 || serialConfigInProgress)
@@ -1481,10 +1490,10 @@ void CheckKeys(void)
     else 
 #endif
     {
-        if (gPttIsPressed)
+        if (gPttIsPressed && !gSidePttActive)
         {
             if (!isPressed)
-            {   // PTT released or serial comms config in progress
+            {   // hardware PTT released or serial comms config in progress
                 if (++gPttDebounceCounter >= 3 || serialConfigInProgress)   // 30ms
                 {   // stop transmitting
                     gPttDebounceCounter = 0;
@@ -1494,17 +1503,19 @@ void CheckKeys(void)
             else 
                 gPttDebounceCounter = 0;
         }
-        else if (isPressed)
-        {   // PTT pressed
+        else if (isPressed && !gSidePttActive)
+        {   // hardware PTT pressed
             if (++gPttDebounceCounter >= 3)     // 30ms
             {   // start transmitting
                 boot_counter_10ms   = 0;
                 gPttDebounceCounter = 0;
+                gSidePttActive      = false;
                 gPttIsPressed       = true;
+                COMMON_SelectPttVfo(0);
                 ProcessKey(KEY_PTT, true, false);
             }
         }
-        else
+        else if (!gSidePttActive)
             gPttDebounceCounter = 0;
     }
 
@@ -1610,19 +1621,12 @@ void APP_TimeSlice10ms(void)
     if (gCurrentFunction != FUNCTION_POWER_SAVE || !gRxIdleMode)
         CheckRadioInterrupts();
 
-    if (gCurrentFunction == FUNCTION_TRANSMIT)
-    {   // transmitting
-#if defined(ENABLE_AUDIO_BAR) && !defined(ENABLE_FEAT_F4HWN_AUDIO_SCOPE)
-        if (gSetting_mic_bar && (gFlashLightBlinkCounter % (150 / 10)) == 0) // once every 150ms
-            UI_DisplayAudioBar();
-#endif
+    /* Refresh home meter (S / TX bars) periodically */
+    if (gScreenToDisplay == DISPLAY_MAIN &&
+        (FUNCTION_IsRx() || gCurrentFunction == FUNCTION_TRANSMIT) &&
+        (gFlashLightBlinkCounter % 5u) == 0u) {
+        gUpdateDisplay = true;
     }
-
-#ifdef ENABLE_FEAT_F4HWN_AUDIO_SCOPE
-    if (gSetting_mic_bar && (gFlashLightBlinkCounter % (20 / 10)) == 0) // once every 20ms
-        // Sample audio amplitude and refresh display during TX only (FM RX has no usable audio register)
-        UI_DisplayAudioScope();
-#endif
 
     bool gUpdateDisplayCurrent = gUpdateDisplay;
     bool gUpdateStatusCurrent  = gUpdateStatus;
@@ -1663,7 +1667,11 @@ void APP_TimeSlice10ms(void)
     }
 
     if (gUpdateStatusCurrent) {
-        UI_DisplayStatus();
+        /* Home screen draws its own top meter/battery into the status line */
+        if (gScreenToDisplay != DISPLAY_MAIN)
+            UI_DisplayStatus();
+        else
+            gUpdateStatus = false;
     }
 
     #ifdef ENABLE_FEAT_F4HWN_K5VIEWER
@@ -2407,15 +2415,12 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         {
             char Code;
 
-            if (Key == KEY_PTT) {
+            if (Key == KEY_PTT || Key == KEY_SIDE1 || Key == KEY_SIDE2) {
                 GENERIC_Key_PTT(bKeyPressed);
                 goto Skip;
             }
 
-            if (Key == KEY_SIDE2) { // transmit 1750Hz tone
-                Code = 0xFE;
-            }
-            else {
+            {
                 Code = DTMF_GetCharacter(Key - KEY_0);
                 if (Code == 0xFF)
                     goto Skip;
@@ -2562,8 +2567,8 @@ Skip:
 
     if (gVfoConfigureMode != VFO_CONFIGURE_NONE) {
         if (gFlagResetVfos) {
-            RADIO_ConfigureChannel(0, gVfoConfigureMode);
-            RADIO_ConfigureChannel(1, gVfoConfigureMode);
+            for (unsigned int v = 0; v < NUM_VFOS; v++)
+                RADIO_ConfigureChannel(v, gVfoConfigureMode);
         }
         else
             RADIO_ConfigureChannel(gEeprom.TX_VFO, gVfoConfigureMode);
@@ -2592,8 +2597,8 @@ Skip:
         gDTMF_IsTx                  = false;
 #endif
 
-        gVFO_RSSI_bar_level[0]      = 0;
-        gVFO_RSSI_bar_level[1]      = 0;
+        for (unsigned int i = 0; i < NUM_VFOS; i++)
+            gVFO_RSSI_bar_level[i] = 0;
 
         gFlagReconfigureVfos        = false;
 

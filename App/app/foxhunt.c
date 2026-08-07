@@ -1172,7 +1172,8 @@ static void FOXHUNT_BeaconTick(void)
 // 0x90E0, just past the real end. Normal saves are read-modify-write (Append=false)
 // so they preserve these bytes, and the VFO mapping is extended to 0x90E7
 // (eeprom_compat.c) so aircopy clones them with the VFOs. A factory reset clears it.
-#define FOXHUNT_CFG_ADDR  0x0090E0u
+/* Past expanded 3-VFO band table: 7 bands * 3 * 16 = 0x150 → ends 0x9150 */
+#define FOXHUNT_CFG_ADDR  0x009160u
 #define FOXHUNT_CFG_MAGIC 0xF4u    // tells a written config from erased flash (0xFF)
 #define FOXHUNT_CFG_LEN   7        // magic + att + graph + audio + idle + fox + tx
 

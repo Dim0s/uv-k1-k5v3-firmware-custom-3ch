@@ -43,7 +43,7 @@ VFO_Info_t    *gTxVfo;
 VFO_Info_t    *gRxVfo;
 VFO_Info_t    *gCurrentVfo;
 DCS_CodeType_t gCurrentCodeType;
-VfoState_t     VfoState[2];
+VfoState_t     VfoState[NUM_VFOS];
 
 const char gModulationStr[MODULATION_UKNOWN][4] = {
     [MODULATION_FM]="FM",
@@ -334,7 +334,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
     if (IS_MR_CHANNEL(channel))
         base = channel * 16;
     else
-        base = 0x009000 + ((channel - FREQ_CHANNEL_FIRST) * 32) + (VFO * 16);
+        base = 0x009000 + ((channel - FREQ_CHANNEL_FIRST) * (NUM_VFOS * 16u)) + (VFO * 16u);
 
     if (configure == VFO_CONFIGURE_RELOAD || IS_FREQ_CHANNEL(channel))
     {
@@ -375,7 +375,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
         RADIO_ValidateAndSetCode(&pVfo->freq_config_RX, data[0]);
         RADIO_ValidateAndSetCode(&pVfo->freq_config_TX, data[1]);
 
-        if (data[4] == 0xFF)
+        if (data[4] == 0xFF || ((data[4] >> 2) & 7u) > OUTPUT_POWER_HIGH)
         {
             pVfo->FrequencyReverse  = false;
             pVfo->CHANNEL_BANDWIDTH = BK4819_FILTER_BW_WIDE;
@@ -416,7 +416,10 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
             uint32_t Offset;
         } __attribute__((packed)) info;
         PY25Q16_ReadBuffer(base, &info, sizeof(info));
-        if(info.Frequency==0xFFFFFFFF)
+        /* 0 / 0xFFFFFFFF / below VHF floor: treat as empty (new 3-VFO flash map) */
+        if (info.Frequency == 0xFFFFFFFFu ||
+            info.Frequency == 0u ||
+            info.Frequency < frequencyBandTable[0].lower)
             pVfo->freq_config_RX.Frequency = frequencyBandTable[band].lower;
         else
             pVfo->freq_config_RX.Frequency = info.Frequency;
@@ -723,8 +726,12 @@ static void RADIO_SelectCurrentVfo(void)
 
 void RADIO_SelectVfos(void)
 {
-    // if crossband without DW is used then RX_VFO is the opposite to the TX_VFO
-    gEeprom.RX_VFO = (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF || gEeprom.DUAL_WATCH != DUAL_WATCH_OFF) ? gEeprom.TX_VFO : !gEeprom.TX_VFO;
+    /* Triple-watch: keep RX_VFO as set by polling / PTT; force XB off. */
+    gEeprom.CROSS_BAND_RX_TX = CROSS_BAND_OFF;
+    if (gEeprom.TX_VFO >= NUM_VFOS)
+        gEeprom.TX_VFO = 0;
+    if (gEeprom.RX_VFO >= NUM_VFOS)
+        gEeprom.RX_VFO = gEeprom.TX_VFO;
 
     gTxVfo = &gEeprom.VfoInfo[gEeprom.TX_VFO];
     gRxVfo = &gEeprom.VfoInfo[gEeprom.RX_VFO];
@@ -1165,15 +1172,16 @@ void RADIO_SetupAGC(bool listeningAM, bool disable)
 void RADIO_SetVfoState(VfoState_t State)
 {
     if (State == VFO_STATE_NORMAL) {
-        VfoState[0] = VFO_STATE_NORMAL;
-        VfoState[1] = VFO_STATE_NORMAL;
+        for (unsigned int i = 0; i < NUM_VFOS; i++)
+            VfoState[i] = VFO_STATE_NORMAL;
     } else if (State == VFO_STATE_VOLTAGE_HIGH) {
         VfoState[0] = VFO_STATE_VOLTAGE_HIGH;
-        VfoState[1] = VFO_STATE_TX_DISABLE;
+        for (unsigned int i = 1; i < NUM_VFOS; i++)
+            VfoState[i] = VFO_STATE_TX_DISABLE;
     } else {
-        // 1of11
-        const unsigned int vfo = (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF) ? gEeprom.RX_VFO : gEeprom.TX_VFO;
-        VfoState[vfo] = State;
+        const unsigned int vfo = gEeprom.RX_VFO;
+        if (vfo < NUM_VFOS)
+            VfoState[vfo] = State;
     }
 
     gVFOStateResumeCountdown_500ms = (State == VFO_STATE_NORMAL) ? 0 : vfo_state_resume_countdown_500ms;
