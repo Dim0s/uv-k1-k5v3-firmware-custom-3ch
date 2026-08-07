@@ -2417,6 +2417,13 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
             if (Key == KEY_PTT || Key == KEY_SIDE1 || Key == KEY_SIDE2) {
                 GENERIC_Key_PTT(bKeyPressed);
+                /* Side-key PTT starts via ACTION_Handle (sets gSidePttActive),
+                 * but release while TX is handled here and never reaches
+                 * ACTION_Handle — clear flags or hardware PTT stays dead. */
+                if (!bKeyPressed) {
+                    gPttIsPressed  = false;
+                    gSidePttActive = false;
+                }
                 goto Skip;
             }
 
