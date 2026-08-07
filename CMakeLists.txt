@@ -74,7 +74,7 @@ else()
 endif()
 
 if(DEV)
-    if(NOT "${TARGET}" STREQUAL "f4hwn.fusion")
+    if(NOT "${TARGET}" STREQUAL "f4hwn-3ch.fusion")
         message(FATAL_ERROR "DEV is only supported for the Fusion target")
     endif()
     set(DISPLAY_VERSION_STRING_2 "${VERSION_STRING_2} Dev")

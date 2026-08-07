@@ -1,4 +1,4 @@
-{
+﻿{
     "version": 3,
     "configurePresets": [
         {
@@ -91,7 +91,7 @@
             "inherits": "default",
             "cacheVariables": {
                 "EDITION_STRING": "Custom",
-                "TARGET": "f4hwn.custom"
+                "TARGET": "f4hwn-3ch.custom"
             }
         },
         {
@@ -108,7 +108,7 @@
                 "ENABLE_FEAT_F4HWN_GMRS_FRS_MURS": true,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": false,
                 "EDITION_STRING": "Bandscope",
-                "TARGET": "f4hwn.bandscope"
+                "TARGET": "f4hwn-3ch.bandscope"
             }
         },
         {
@@ -125,7 +125,7 @@
                 "ENABLE_FEAT_F4HWN_GMRS_FRS_MURS": true,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": false,
                 "EDITION_STRING": "Broadcast",
-                "TARGET": "f4hwn.broadcast"
+                "TARGET": "f4hwn-3ch.broadcast"
             }
         },
         {
@@ -149,7 +149,7 @@
                 "ENABLE_FEAT_F4HWN_NARROWER": true,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": false,
                 "EDITION_STRING": "Basic",
-                "TARGET": "f4hwn.basic"
+                "TARGET": "f4hwn-3ch.basic"
             }
         },
         {
@@ -167,7 +167,7 @@
                 "ENABLE_NOAA": true,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": true,
                 "EDITION_STRING": "RescueOps",
-                "TARGET": "f4hwn.rescueops"
+                "TARGET": "f4hwn-3ch.rescueops"
             }
         },
         {
@@ -184,7 +184,7 @@
                 "ENABLE_FEAT_F4HWN_GMRS_FRS_MURS": true,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": false,
                 "EDITION_STRING": "Game",
-                "TARGET": "f4hwn.game"
+                "TARGET": "f4hwn-3ch.game"
             }
         },
         {
@@ -218,7 +218,7 @@
                 "ENABLE_FEAT_F4HWN_LOGO_SAV": true,
                 "ENABLE_SWD": true,
                 "EDITION_STRING": "Fusion",
-                "TARGET": "f4hwn.fusion"
+                "TARGET": "f4hwn-3ch.fusion"
             }
         }
     ],
