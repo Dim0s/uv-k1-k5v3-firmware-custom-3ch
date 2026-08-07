@@ -984,6 +984,10 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
     }
 
     if (gScanStateDir == SCAN_OFF) {
+        /* Operate the inverted/home-selected VFO, not a stale TX_VFO. */
+        COMMON_SyncOpVfoToHighlight();
+        Channel = gEeprom.ScreenChannel[gEeprom.TX_VFO];
+
 #ifdef ENABLE_NOAA
         if (!IS_NOAA_CHANNEL(Channel))
 #endif

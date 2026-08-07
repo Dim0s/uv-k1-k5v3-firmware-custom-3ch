@@ -765,6 +765,7 @@ void APP_StartListening(FUNCTION_Type_t function)
             gRxVfoIsActive = true;
 
         gHighlightVfo = gEeprom.RX_VFO;
+        COMMON_SyncOpVfoToHighlight();
 
         // let the user see DW is not active
         gDualWatchActive = false;

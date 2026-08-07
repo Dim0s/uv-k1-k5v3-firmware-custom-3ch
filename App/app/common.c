@@ -36,6 +36,19 @@ void COMMON_SelectPttVfo(uint8_t vfo)
     RADIO_SelectVfos();
 }
 
+void COMMON_SyncOpVfoToHighlight(void)
+{
+    /* Keep the operating VFO aligned with the home-screen invert row.
+     * Do not touch RX_VFO (may be mid-receive) or call RADIO_SetupRegisters(). */
+    if (gHighlightVfo >= NUM_VFOS)
+        return;
+    if (gEeprom.TX_VFO == gHighlightVfo)
+        return;
+
+    gEeprom.TX_VFO = gHighlightVfo;
+    RADIO_SelectVfos();
+}
+
 void COMMON_SwitchVFOs()
 {
 #ifdef ENABLE_SCAN_RANGES    
