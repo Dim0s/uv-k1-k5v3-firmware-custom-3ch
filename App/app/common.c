@@ -1,4 +1,5 @@
 #include "app/chFrScanner.h"
+#include "app/dtmf.h"
 #include "audio.h"
 #include "functions.h"
 #include "misc.h"
@@ -24,13 +25,26 @@ void COMMON_KeypadLockToggle()
     }
 }
 
+void COMMON_SetHighlightVfo(uint8_t vfo)
+{
+    if (vfo >= NUM_VFOS)
+        vfo = 0;
+    if (gHighlightVfo == vfo)
+        return;
+
+    /* Highlight moved: drop live DTMF so the old row restores mod/power/SQL. */
+    gDTMF_RX_live_timeout = 0;
+    DTMF_clear_input_box_memory();
+    gHighlightVfo = vfo;
+}
+
 void COMMON_SelectPttVfo(uint8_t vfo)
 {
     if (vfo >= NUM_VFOS)
         vfo = 0;
     gEeprom.TX_VFO = vfo;
     gEeprom.RX_VFO = vfo;
-    gHighlightVfo  = vfo;
+    COMMON_SetHighlightVfo(vfo);
     /* Only retarget VFO pointers here. Do NOT call RADIO_SetupRegisters():
      * that forces RX config and can race with RADIO_PrepareTX(). */
     RADIO_SelectVfos();
@@ -56,7 +70,7 @@ void COMMON_SwitchVFOs()
 #endif
     gEeprom.TX_VFO = (uint8_t)((gEeprom.TX_VFO + 1u) % NUM_VFOS);
     gEeprom.RX_VFO = gEeprom.TX_VFO;
-    gHighlightVfo  = gEeprom.TX_VFO;
+    COMMON_SetHighlightVfo(gEeprom.TX_VFO);
 
     if (gInputBoxIndex > 0) {
         gInputBoxIndex = 0;

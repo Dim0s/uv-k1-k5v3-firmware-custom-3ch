@@ -764,7 +764,7 @@ void APP_StartListening(FUNCTION_Type_t function)
         if(gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF)
             gRxVfoIsActive = true;
 
-        gHighlightVfo = gEeprom.RX_VFO;
+        COMMON_SetHighlightVfo(gEeprom.RX_VFO);
         COMMON_SyncOpVfoToHighlight();
 
         // let the user see DW is not active

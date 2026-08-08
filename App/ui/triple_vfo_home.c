@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "app/dtmf.h"
 #include "bitmaps.h"
 #include "dcs.h"
 #include "driver/bk4819.h"
@@ -117,14 +118,23 @@ static void invert_channel_row(uint8_t vfo)
     }
 }
 
+/* gFontSmall 右对齐串的左缘 X（含字符前 1px 空位） */
+static uint8_t right_small_px_left(const char *text)
+{
+    const size_t len = strlen(text);
+    const uint8_t char_w = (uint8_t)ARRAY_SIZE(gFontSmall[0]);
+    const uint8_t char_spacing = (uint8_t)(char_w + 1u);
+    const uint8_t width = (uint8_t)(len * char_spacing);
+    return (width >= LCD_WIDTH) ? 0u : (uint8_t)(LCD_WIDTH - width);
+}
+
 /* gFontSmall 按像素 Y 右对齐绘制；返回名称左缘 X（含字符前 1px 空位） */
 static uint8_t draw_right_small_px(const char *text, uint8_t y_top)
 {
     const size_t len = strlen(text);
     const uint8_t char_w = (uint8_t)ARRAY_SIZE(gFontSmall[0]);
     const uint8_t char_spacing = (uint8_t)(char_w + 1u);
-    const uint8_t width = (uint8_t)(len * char_spacing);
-    uint8_t x = (width >= LCD_WIDTH) ? 0u : (uint8_t)(LCD_WIDTH - width);
+    uint8_t x = right_small_px_left(text);
     const uint8_t left = x;
 
     for (size_t i = 0; i < len; i++) {
@@ -144,6 +154,35 @@ static uint8_t draw_right_small_px(const char *text, uint8_t y_top)
         x = (uint8_t)(x + char_spacing);
     }
     return left;
+}
+
+/* 第二行左侧：DTMF: + 数字；超宽时固定前缀，从左侧丢掉数字（滚动） */
+static void draw_dtmf_live_param(uint8_t y, uint8_t x_right, const char *digits)
+{
+    static const char prefix[] = "DTMF:";
+    const uint8_t x_left = 1u;
+    const uint8_t gap = 2u;
+    char buf[28];
+    size_t dig_off = 0;
+    size_t dig_len;
+    uint8_t avail;
+
+    if (digits == NULL)
+        digits = "";
+    dig_len = strlen(digits);
+
+    if (x_right <= (uint8_t)(x_left + gap))
+        return;
+    avail = (uint8_t)(x_right - gap - x_left);
+
+    while (dig_off < dig_len) {
+        snprintf(buf, sizeof(buf), "%s%s", prefix, digits + dig_off);
+        if (TripleVfoU8g2_GetSmallTextWidth(buf) <= avail)
+            break;
+        dig_off++;
+    }
+    snprintf(buf, sizeof(buf), "%s%s", prefix, digits + dig_off);
+    TripleVfoU8g2_DrawSmallText(buf, x_left, y, true);
 }
 
 static const char *power_letter(uint8_t power)
@@ -186,10 +225,14 @@ static void draw_channel_row(uint8_t vfo)
     const VFO_Info_t *info = &gEeprom.VfoInfo[vfo];
     char String[22];
     char tone[12];
+    char freq_str[16];
     const bool transmitting = (gCurrentFunction == FUNCTION_TRANSMIT && gEeprom.TX_VFO == vfo);
     const bool black = true;
+    const bool show_dtmf = gSetting_live_DTMF_decoder &&
+                           gDTMF_RX_live[0] != 0 &&
+                           vfo == gHighlightVfo;
 
-    /* 上行：信道号（反色徽章）+ 亚音；下行：调制 / 功率 / SQL */
+    /* 上行：信道号（反色徽章）+ 亚音；下行：调制 / 功率 / SQL（或 DTMF） */
     uint8_t x = 2u;
     const uint8_t y0 = TV_PARAM_Y0(vfo);
     const uint8_t y1 = TV_PARAM_Y1(vfo);
@@ -214,11 +257,26 @@ static void draw_channel_row(uint8_t vfo)
     if (tone[0] != '\0')
         draw_param_item(tone, x, y0, black);
 
-    x = 1;
-    x = draw_param_item(gModulationStr[info->Modulation], x, y1, black);
-    x = draw_param_item(power_letter(info->OUTPUT_POWER), x, y1, black);
-    snprintf(String, sizeof(String), "%u", (unsigned)gEeprom.SQUELCH_LEVEL);
-    draw_param_item(String, x, y1, black);
+    /* frequency 文案先算好：左侧 DTMF 右界要贴到频率前 */
+    {
+        uint32_t frequency = transmitting ? info->pTX->Frequency : info->pRX->Frequency;
+        if (info->TX_OFFSET_FREQUENCY_DIRECTION == TX_OFFSET_FREQUENCY_DIRECTION_ADD)
+            snprintf(freq_str, sizeof(freq_str), "+%03u.%05u", frequency / 100000u, frequency % 100000u);
+        else if (info->TX_OFFSET_FREQUENCY_DIRECTION == TX_OFFSET_FREQUENCY_DIRECTION_SUB)
+            snprintf(freq_str, sizeof(freq_str), "-%03u.%05u", frequency / 100000u, frequency % 100000u);
+        else
+            snprintf(freq_str, sizeof(freq_str), "%03u.%05u", frequency / 100000u, frequency % 100000u);
+    }
+
+    if (show_dtmf) {
+        draw_dtmf_live_param(y1, right_small_px_left(freq_str), gDTMF_RX_live);
+    } else {
+        x = 1;
+        x = draw_param_item(gModulationStr[info->Modulation], x, y1, black);
+        x = draw_param_item(power_letter(info->OUTPUT_POWER), x, y1, black);
+        snprintf(String, sizeof(String), "%u", (unsigned)gEeprom.SQUELCH_LEVEL);
+        draw_param_item(String, x, y1, black);
+    }
 
     /* name；禁止发射时在信道名位置显示原因 */
     if (VfoState[vfo] != VFO_STATE_NORMAL &&
@@ -250,15 +308,7 @@ static void draw_channel_row(uint8_t vfo)
         }
     }
 
-    /* frequency，前方显示频差方向 + / - */
-    uint32_t frequency = transmitting ? info->pTX->Frequency : info->pRX->Frequency;
-    if (info->TX_OFFSET_FREQUENCY_DIRECTION == TX_OFFSET_FREQUENCY_DIRECTION_ADD)
-        snprintf(String, sizeof(String), "+%03u.%05u", frequency / 100000u, frequency % 100000u);
-    else if (info->TX_OFFSET_FREQUENCY_DIRECTION == TX_OFFSET_FREQUENCY_DIRECTION_SUB)
-        snprintf(String, sizeof(String), "-%03u.%05u", frequency / 100000u, frequency % 100000u);
-    else
-        snprintf(String, sizeof(String), "%03u.%05u", frequency / 100000u, frequency % 100000u);
-    draw_right_small_px(String, (uint8_t)(TV_CH_TOP(vfo) + 8u));
+    draw_right_small_px(freq_str, (uint8_t)(TV_CH_TOP(vfo) + 8u));
 }
 
 static void draw_meter_row(void)
