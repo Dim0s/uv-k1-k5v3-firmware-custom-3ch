@@ -60,6 +60,34 @@ build_preset() {
 }
 
 # ---------------------------------------------
+# After Fusion build, copy bin to local web projects if dirs exist
+# ---------------------------------------------
+deploy_fusion_bin() {
+  local src="build/Fusion/f4hwn-3ch.fusion.bin"
+  if [[ ! -f "$src" ]]; then
+    echo "⚠️  Skip deploy: $src not found"
+    return
+  fi
+
+  local dests=(
+    "D:/File/code/uvk1/uv-k1-k6v3-multi-system/web/dist/firmware/f4hwn-3ch.fusion.bin"
+    "D:/File/code/uvk1/uv-k1-k6v3-multi-system/web/src/firmware/f4hwn-3ch.fusion.bin"
+    "D:/File/code/uvk1/uv-k1-k6v3-multi-system-web/firmware/f4hwn-3ch.fusion.bin"
+  )
+
+  for dest in "${dests[@]}"; do
+    local dir
+    dir="$(dirname "$dest")"
+    if [[ -d "$dir" ]]; then
+      cp -f "$src" "$dest"
+      echo "📦 Copied to $dest"
+    else
+      echo "⚠️  Skip copy (dir missing): $dir"
+    fi
+  done
+}
+
+# ---------------------------------------------
 # Handle 'All' preset
 # ---------------------------------------------
 if [[ "$PRESET" == "All" ]]; then
@@ -69,6 +97,10 @@ if [[ "$PRESET" == "All" ]]; then
   done
   echo ""
   echo "🎉 All presets built successfully!"
+  deploy_fusion_bin
 else
   build_preset "$PRESET"
+  if [[ "$PRESET" == "Fusion" ]]; then
+    deploy_fusion_bin
+  fi
 fi
