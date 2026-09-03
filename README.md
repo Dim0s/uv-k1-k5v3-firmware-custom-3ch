@@ -3,4 +3,8 @@
    там же переименовал "VFO A/B" в "VFO A/B/C"
    там же переименовал "PTT" в "PTT MODE OP/CL"
 
+<h3 align="center">
+   
 релиз этой версии есть [в архиве прошивок](https://github.com/Dim0s/quansheng-UV-K5v3-K1-firmware-pack/tree/main/BD1AHN/)
+
+</h3>
