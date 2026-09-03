@@ -17,44 +17,8 @@ jobs:
         chmod +x compile-with-docker.sh
         ./compile-with-docker.sh
 
-    - name: Locate compiled firmware
-      run: |
-        echo "=== Searching all .bin files ==="
-        find . -name "*.bin" -type f 2>/dev/null || echo "No .bin files found"
-        
-        echo "=== Searching .packed files ==="
-        find . -name "*.packed*" -type f 2>/dev/null || echo "No .packed files found"
-        
-        echo "=== Current directory contents ==="
-        ls -la
-        
-        echo "=== Check compiled-firmware folder ==="
-        ls -la compiled-firmware/ 2>/dev/null || echo "compiled-firmware not exists"
-        
-        echo "=== Docker volumes ==="
-        docker volume ls
-
-    - name: Prepare artifact
-      run: |
-        mkdir -p artifact
-
-        find . -name "*.bin" -exec cp {} artifact/ \; 2>/dev/null || echo "No .bin files to copy"
-        
-        find . -name "*.packed*" ! -name "*.bin" -exec cp {} artifact/ \; 2>/dev/null || echo "No .packed files"
-        
-        echo "=== Final artifact contents ==="
-        ls -la artifact/
-        
-        if [ -z "$(ls -A artifact/)" ]; then
-          echo "ERROR: No firmware files found!"
-          echo "Full directory structure:"
-          find . -type f | head -50
-          exit 1
-        fi
-
     - name: Upload firmware artifact
       uses: actions/upload-artifact@v4
       with:
         name: firmware-artifact
-        path: artifact/
-        if-no-files-found: error
+        path: compiled-firmware/f4hwn.packed.bin
