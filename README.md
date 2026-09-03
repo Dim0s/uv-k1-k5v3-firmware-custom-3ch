@@ -1,3 +1,9 @@
+1. убрал задержку TX/RX между VFO
+2. скрыл пункты "MAIN ONLY" и "RX MODE" в меню назначений функций при долгом удержании клавиши MENU
+   там же переименовал "VFO A/B" в "VFO A/B/C"
+   там же переименовал "PTT" в "PTT MODE OP/CL"
+
+
 # Stats
 
 ![Alt](https://repobeats.axiom.co/api/embed/ecdd86aa536b716f088339a0c5ee734558f78c28.svg "Repobeats analytics image")
