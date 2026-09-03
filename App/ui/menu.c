@@ -504,7 +504,7 @@ const t_sidefunction gSubMenu_SIDEFUNCTIONS[] =
     {"1750Hz",          ACTION_OPT_1750},
 #endif
     {"LOCK\nKEYPAD",    ACTION_OPT_KEYLOCK},
-    {"VFO scroll",    ACTION_OPT_A_B},
+    {"VFO A\nVFO B\nVFO C",    ACTION_OPT_A_B},
     {"VFO\nMEM",        ACTION_OPT_VFO_MR},
     {"MODE",            ACTION_OPT_SWITCH_DEMODUL},
 #ifdef ENABLE_BLMIN_TMP_OFF
