@@ -768,7 +768,7 @@ void APP_StartListening(FUNCTION_Type_t function)
 
         // Use a short hold only for MAIN TX DUAL RX, keep legacy hold otherwise
         gDualWatchCountdown_10ms = isMainTxDualRx
-            ? dual_watch_count_after_2_10ms // Short timer = 420 / 4 ...
+            ? dual_watch_count_after_2_10ms / 4 // Short timer = 420 / 4 ...
             : dual_watch_count_after_2_10ms;
 
         gScheduleDualWatch       = false;
