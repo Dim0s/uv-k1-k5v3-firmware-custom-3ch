@@ -5,6 +5,6 @@
 
 <h3 align="center">
    
-релиз этой версии есть [в архиве прошивок](https://github.com/Dim0s/quansheng-UV-K5v3-K1-firmware-pack/tree/main/BD1AHN/)
+релиз этой версии есть [в сборнике прошивок](https://github.com/Dim0s/quansheng-UV-K5v3-K1-firmware-pack/tree/main/BD1AHN/)
 
 </h3>
